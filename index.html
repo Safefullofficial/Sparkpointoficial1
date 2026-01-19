@@ -2,45 +2,66 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <title>SparkPoint Project</title>
+    <title>SparkPoint - Personal Office</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #0b1015; color: #fff; font-family: sans-serif; text-align: center; padding: 40px 20px; margin: 0; }
-        .box { border: 2px solid #f39c12; padding: 25px; border-radius: 15px; background: #161b22; max-width: 400px; margin: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        h2 { color: #f39c12; margin-bottom: 5px; }
-        .badge { background: #f1c40f; color: #000; padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        button { background: #f39c12; color: #000; border: none; padding: 18px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; transition: 0.3s; }
-        button:hover { opacity: 0.8; transform: translateY(-2px); }
-        #status { margin-top: 20px; color: #bdc3c7; font-size: 13px; min-height: 40px; }
-        .admin-section { border: 1px solid #e74c3c; margin-top: 25px; padding: 15px; border-radius: 10px; background: #1a0a0a; display: none; }
-        .admin-section input { width: 90%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 12px; }
-        #refBox { display: none; margin-top: 20px; background: #0d1117; padding: 15px; border-radius: 10px; border: 1px dashed #2ecc71; }
-        .link-text { font-size: 11px; color: #2ecc71; margin: 10px 0; word-break: break-all; font-family: monospace; }
+        body { background: #0b1015; color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; margin: 0; }
+        .box { border: 2px solid #f39c12; padding: 25px; border-radius: 20px; background: #161b22; max-width: 400px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #f39c12; margin-bottom: 20px; letter-spacing: 1px; }
+        .badge { background: #f1c40f; color: #000; padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+        
+        button { background: #f39c12; color: #000; border: none; padding: 16px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; transition: 0.3s; }
+        button:hover { filter: brightness(1.2); }
+
+        .stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; display: none; }
+        .stat-card { background: #1f2730; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        .stat-val { display: block; font-size: 22px; font-weight: bold; color: #f39c12; margin-top: 5px; }
+        .stat-label { font-size: 12px; color: #aaa; text-transform: uppercase; }
+        
+        .vip-status { color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.5); font-weight: bold; }
+
+        #status { margin-top: 20px; color: #888; font-size: 13px; }
+        #refBox { display: none; margin-top: 25px; background: #0d1117; padding: 15px; border-radius: 12px; border: 1px dashed #2ecc71; }
+        .link-text { font-size: 11px; color: #2ecc71; margin: 12px 0; word-break: break-all; font-family: monospace; background: #000; padding: 8px; border-radius: 5px; }
+        
+        .admin-section { border: 2px solid #e74c3c; margin-top: 25px; padding: 15px; border-radius: 12px; background: #1a0a0a; display: none; }
+        .admin-section input { width: 90%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <span class="badge">BSC Testnet Mode</span>
+    <span class="badge">BSC Testnet</span>
     <h2>SparkPoint</h2>
-    <p style="color: #888;">Вход: 0.05 T-BNB</p>
     
-    <button id="btnConnect" onclick="connect()">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
-    <button id="btnPay" style="display:none; background:#2ecc71; color:#fff;">ОПЛАТИТЬ УЧАСТИЕ</button>
+    <div id="statsUI" class="stats-container">
+        <div class="stat-card">
+            <span class="stat-label">Ваш Уровень</span>
+            <span id="uiLevel" class="stat-val">-</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Партнеры</span>
+            <span id="uiRefs" class="stat-val">0</span>
+        </div>
+        <p style="grid-column: span 2; font-size: 11px; color: #2ecc71; margin: 0;">Выплаты поступают сразу на кошелек</p>
+    </div>
+
+    <button id="btnConnect" onclick="connect()">ВОЙТИ В КАБИНЕТ</button>
+    <button id="btnPay" style="display:none; background:#2ecc71; color:#fff;">АКТИВИРОВАТЬ (0.05 T-BNB)</button>
     
-    <div id="status">Ожидание подключения...</div>
+    <div id="status">Подключите кошелек</div>
     
     <div id="refBox">
-        <p style="color: #f39c12; font-size: 14px; margin: 0;">Ваша ссылка (для 2 человек):</p>
+        <p style="color: #f39c12; font-size: 13px; margin: 0; font-weight: bold;">ВАША ССЫЛКА ПРИГЛАШЕНИЯ:</p>
         <div id="linkText" class="link-text"></div>
-        <button onclick="copyLink()" style="padding: 8px; font-size: 12px; background: #444; color: #fff; width: auto;">Копировать ссылку</button>
+        <button onclick="copyLink()" style="padding: 10px; font-size: 12px; background: #444; color: #fff; width: auto; margin-top: 0;">Копировать</button>
     </div>
 
     <div id="adminPanel" class="admin-section">
-        <h4 style="color: #e74c3c; margin: 0 0 10px 0;">Панель Управления</h4>
-        <input type="text" id="newWallet" placeholder="Адрес участника (0x...)">
-        <input type="text" id="newRef" placeholder="Адрес пригласителя (0x...)">
+        <h4 style="color: #e74c3c; margin: 0 0 10px 0;">АДМИН-ПАНЕЛЬ</h4>
+        <input type="text" id="newWallet" placeholder="Адрес участника">
+        <input type="text" id="newRef" placeholder="Адрес реферера">
         <button onclick="adminAdd()" style="background:#e74c3c; color:#fff; padding: 10px; font-size: 14px;">Добавить бесплатно</button>
     </div>
 </div>
@@ -48,40 +69,20 @@
 <script>
     const CONTRACT_ADDR = "0x137cbBBb38962ABd3A3a0D212C1f408FBD92ffb8";
     const ADMIN_WALLET = "0xc675B81b3Ef6ac1F9aEEd581A47c245E08E41DEc".toLowerCase();
-    const CHAIN_ID = "0x61"; // Testnet
+    const CHAIN_ID = "0x61";
 
     const ABI = [
         "function register(address _ref) external payable",
         "function adminAddUser(address _user, address _referrer) external",
-        "function users(address) view returns (uint256, address, uint256, uint256, uint256, bool)"
+        "function users(address) view returns (uint256 level, address referrer, uint256 internalBalance, uint256 referralsInLevel, uint256 totalDirectReferrals, bool exists)"
     ];
 
     let signer, contract, userAddr;
-    const urlParams = new URLSearchParams(window.location.search);
-    const referrer = urlParams.get('ref') || "0x0000000000000000000000000000000000000000";
 
     async function connect() {
-        if (!window.ethereum) return alert("Откройте в Trust Wallet или MetaMask");
+        if (!window.ethereum) return alert("Используйте Trust Wallet / MetaMask");
         try {
-            // Переключение сети
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: CHAIN_ID }],
-            }).catch(async (err) => {
-                if (err.code === 4902) {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: CHAIN_ID,
-                            chainName: 'BSC Testnet',
-                            nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 },
-                            rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
-                            blockExplorerUrls: ['https://testnet.bscscan.com/']
-                        }]
-                    });
-                }
-            });
-
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID }] });
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
             userAddr = accounts[0].toLowerCase();
@@ -89,57 +90,51 @@
             contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
 
             document.getElementById('btnConnect').style.display = "none";
+            if (userAddr === ADMIN_WALLET) document.getElementById('adminPanel').style.display = "block";
             
-            if (userAddr === ADMIN_WALLET) {
-                document.getElementById('adminPanel').style.display = "block";
-                document.getElementById('status').innerText = "Вы зашли как АДМИН";
-            } else {
-                checkUser();
-            }
-        } catch (e) {
-            document.getElementById('status').innerText = "Ошибка подключения";
-        }
+            loadUserData();
+        } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
     }
 
-    async function checkUser() {
+    async function loadUserData() {
         try {
-            const data = await contract.users(userAddr);
-            if (data[5]) { // exists
+            const user = await contract.users(userAddr);
+            if (user.exists) {
+                document.getElementById('statsUI').style.display = "grid";
+                
+                // Уровни 1-5 цифры, дальше VIP
+                let lvl = Number(user.level);
+                document.getElementById('uiLevel').innerHTML = lvl > 5 ? '<span class="vip-status">VIP ✨</span>' : lvl;
+                document.getElementById('uiRefs').innerText = user.totalDirectReferrals.toString();
+
                 showRef(userAddr);
-                document.getElementById('status').innerText = "Вы уже в проекте";
+                document.getElementById('status').innerText = "Личный кабинет активен";
             } else {
                 document.getElementById('btnPay').style.display = "block";
-                document.getElementById('btnPay').onclick = pay;
-                document.getElementById('status').innerText = "Кошелек подключен";
+                document.getElementById('btnPay').onclick = register;
+                document.getElementById('status').innerText = "Готов к регистрации";
             }
-        } catch (e) {
-            document.getElementById('status').innerText = "Ошибка чтения данных";
-        }
+        } catch (e) { console.error(e); }
     }
 
-    async function pay() {
+    async function register() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ref = urlParams.get('ref') || "0x0000000000000000000000000000000000000000";
         try {
-            document.getElementById('status').innerText = "Подтвердите оплату...";
-            const tx = await contract.register(referrer, { value: ethers.parseEther("0.05") });
+            const tx = await contract.register(ref, { value: ethers.parseEther("0.05") });
             await tx.wait();
             location.reload();
-        } catch (e) {
-            alert("Ошибка транзакции");
-        }
+        } catch (e) { alert("Ошибка оплаты"); }
     }
 
     async function adminAdd() {
         const u = document.getElementById('newWallet').value;
         const r = document.getElementById('newRef').value;
-        if (!u || !r) return alert("Заполните оба поля");
         try {
-            document.getElementById('status').innerText = "Отправка админ-панелью...";
             const tx = await contract.adminAddUser(u, r);
             await tx.wait();
-            alert("Пользователь добавлен успешно!");
-        } catch (e) {
-            alert("Ошибка админ-добавления");
-        }
+            alert("Участник добавлен!");
+        } catch (e) { alert("Ошибка"); }
     }
 
     function showRef(addr) {

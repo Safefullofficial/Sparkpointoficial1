@@ -20,10 +20,10 @@
 
         .progress-section { margin-top: 25px; padding: 15px; background: #0d1117; border-radius: 15px; display: none; }
         .slots-title { font-size: 11px; color: #f1c40f; margin-bottom: 12px; font-weight: bold; }
-        .level-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+        .level-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
         .slot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #444; background: #222; }
         .slot.active { background: #2ecc71; border-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
-        .row-label { font-size: 9px; color: #555; margin-right: 5px; align-self: center; min-width: 40px; text-align: right; }
+        .row-label { font-size: 9px; color: #555; margin-right: 5px; align-self: center; min-width: 50px; text-align: right; }
 
         .admin-section { border: 2px solid #e74c3c; margin-top: 30px; padding: 20px; border-radius: 15px; background: #1a0a0a; display: none; text-align: left; }
         .admin-section h4 { color: #e74c3c; margin-top: 0; text-align: center; border-bottom: 1px solid #331111; padding-bottom: 10px; }
@@ -161,12 +161,12 @@
                 document.getElementById('statsUI').style.display = "grid";
                 document.getElementById('progressUI').style.display = "block";
                 document.getElementById('btnPay').style.display = "none";
-                document.getElementById('uiLevel').innerText = user.level.toString();
+                
+                const currentLevel = Number(user.level);
+                document.getElementById('uiLevel').innerText = currentLevel;
                 document.getElementById('uiBalance').innerText = parseFloat(ethers.formatEther(user.internalBalance)).toFixed(3) + " BNB";
                 
-                // Рисуем слоты на основе уровня и кол-ва рефералов в уровне
-                drawSlots(Number(user.level), Number(user.referralsInLevel));
-                
+                drawSlots(currentLevel, Number(user.referralsInLevel));
                 showRef(userAddr);
                 document.getElementById('status').innerText = "Личный кабинет активен";
             } else {
@@ -181,32 +181,32 @@
         const container = document.getElementById('slotsContainer');
         container.innerHTML = "";
         
-        // Математика глубины уровней (2, 4, 8, 16, 32)
-        let depth = level > 5 ? level - 5 : level;
+        // Цикл уровней: 1-5, затем 6-10 повторяют ту же структуру линий
+        let displayLevel = level > 5 ? level - 5 : level;
         document.getElementById('slotsHeader').innerText = `ПРОГРЕСС УРОВНЯ ${level}`;
         
-        let slotsDrawn = 0;
-        for (let r = 1; r <= depth; r++) {
+        let totalSlotsProcessed = 0;
+        for (let line = 1; line <= displayLevel; line++) {
             const row = document.createElement('div');
             row.className = "level-row";
             
             const label = document.createElement('span');
             label.className = "row-label";
-            label.innerText = "Ряд " + r;
+            // Текст линии соответствует количеству участников в ней по маркетингу
+            const participantsCount = Math.pow(2, line);
+            label.innerText = "Линия " + participantsCount;
             row.appendChild(label);
 
-            const slotsInRow = Math.pow(2, r); 
-            
-            for (let s = 0; s < slotsInRow; s++) {
-                const d = document.createElement('div');
-                // Закрашиваем только если активных рефералов больше чем порядковый номер нарисованного слота
-                if (slotsDrawn < activeCount) {
-                    d.className = "slot active";
+            for (let s = 0; s < participantsCount; s++) {
+                const dot = document.createElement('div');
+                // Закрашиваем только реально пришедших участников
+                if (totalSlotsProcessed < activeCount) {
+                    dot.className = "slot active";
                 } else {
-                    d.className = "slot";
+                    dot.className = "slot";
                 }
-                row.appendChild(d);
-                slotsDrawn++;
+                row.appendChild(dot);
+                totalSlotsProcessed++;
             }
             container.appendChild(row);
         }

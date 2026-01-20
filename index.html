@@ -28,7 +28,6 @@
         .admin-section { border: 2px solid #e74c3c; margin-top: 30px; padding: 20px; border-radius: 15px; background: #1a0a0a; display: none; text-align: left; }
         .admin-section h4 { color: #e74c3c; margin-top: 0; text-align: center; border-bottom: 1px solid #331111; padding-bottom: 10px; }
         .admin-stats { display: flex; justify-content: space-between; margin-bottom: 15px; background: #000; padding: 10px; border-radius: 8px; }
-        .admin-stats div { text-align: center; width: 50%; }
         
         .admin-group { margin-bottom: 15px; padding: 10px; background: #251010; border-radius: 8px; }
         .admin-group label { font-size: 11px; color: #e74c3c; font-weight: bold; display: block; margin-bottom: 5px; }
@@ -75,13 +74,9 @@
     <div id="adminPanel" class="admin-section">
         <h4>УПРАВЛЕНИЕ ПРОЕКТОМ</h4>
         <div class="admin-stats">
-            <div>
+            <div style="text-align:center; width:100%">
                 <span class="stat-label">В системе BNB</span>
                 <span id="sysBalance" class="stat-val" style="color:#e74c3c">0.00</span>
-            </div>
-            <div id="sysUsersBox">
-                <span class="stat-label">Участников</span>
-                <span id="sysUsers" class="stat-val" style="color:#e74c3c">0</span>
             </div>
         </div>
 
@@ -109,8 +104,7 @@
     const ABI = [
         "function register(address _ref) external payable",
         "function adminAddUser(address _user, address _referrer) external",
-        "function users(address) view returns (uint256 level, address referrer, uint256 internalBalance, uint256 referralsInLevel, uint256 totalDirectReferrals, bool exists)",
-        "function totalUsers() view returns (uint256)"
+        "function users(address) view returns (uint256 level, address referrer, uint256 internalBalance, uint256 referralsInLevel, uint256 totalDirectReferrals, bool exists)"
     ];
 
     let provider, signer, contract, userAddr;
@@ -138,9 +132,7 @@
         try {
             const bal = await provider.getBalance(CONTRACT_ADDR);
             document.getElementById('sysBalance').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2);
-            const count = await contract.totalUsers();
-            document.getElementById('sysUsers').innerText = count.toString();
-        } catch(e) { document.getElementById('sysUsersBox').style.display = "none"; }
+        } catch(e) { console.log(e); }
     }
 
     async function searchUser() {
@@ -181,25 +173,33 @@
         const container = document.getElementById('slotsContainer');
         container.innerHTML = "";
         
-        // Цикл уровней: 1-5, затем 6-10 повторяют ту же структуру линий
-        let displayLevel = level > 5 ? level - 5 : level;
+        // РЕШАЕМ ПРОБЛЕМУ: определяем РЕАЛЬНУЮ глубину, которую надо показать
+        // Если activeCount (людей) мало, не рисуем все 5 рядов, даже если уровень 10
+        let displayDepth = 1;
+        if (activeCount > 2) displayDepth = 2;
+        if (activeCount > 6) displayDepth = 3;
+        if (activeCount > 14) displayDepth = 4;
+        if (activeCount > 30) displayDepth = 5;
+
+        // Но при этом всегда рисуем минимум один ряд, соответствующий маркетингу уровня
+        let minMarketingDepth = level > 5 ? level - 5 : level;
+        let finalDepth = Math.max(displayDepth, minMarketingDepth);
+
         document.getElementById('slotsHeader').innerText = `ПРОГРЕСС УРОВНЯ ${level}`;
         
         let totalSlotsProcessed = 0;
-        for (let line = 1; line <= displayLevel; line++) {
+        for (let line = 1; line <= finalDepth; line++) {
             const row = document.createElement('div');
             row.className = "level-row";
             
             const label = document.createElement('span');
             label.className = "row-label";
-            // Текст линии соответствует количеству участников в ней по маркетингу
             const participantsCount = Math.pow(2, line);
             label.innerText = "Линия " + participantsCount;
             row.appendChild(label);
 
             for (let s = 0; s < participantsCount; s++) {
                 const dot = document.createElement('div');
-                // Закрашиваем только реально пришедших участников
                 if (totalSlotsProcessed < activeCount) {
                     dot.className = "slot active";
                 } else {

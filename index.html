@@ -21,11 +21,10 @@
         .progress-section { margin-top: 25px; padding: 15px; background: #0d1117; border-radius: 15px; display: none; }
         .slots-title { font-size: 11px; color: #f1c40f; margin-bottom: 12px; font-weight: bold; }
         .level-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
-        .slot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #444; background: #222; }
-        .slot.active { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+        .slot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #444; background: #222; }
+        .slot.active { background: #2ecc71; border-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
         .row-label { font-size: 9px; color: #555; margin-right: 5px; align-self: center; min-width: 40px; text-align: right; }
 
-        /* Админ-панель */
         .admin-section { border: 2px solid #e74c3c; margin-top: 30px; padding: 20px; border-radius: 15px; background: #1a0a0a; display: none; text-align: left; }
         .admin-section h4 { color: #e74c3c; margin-top: 0; text-align: center; border-bottom: 1px solid #331111; padding-bottom: 10px; }
         .admin-stats { display: flex; justify-content: space-between; margin-bottom: 15px; background: #000; padding: 10px; border-radius: 8px; }
@@ -36,7 +35,6 @@
         .admin-section input { width: 95%; padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #441111; background: #000; color: #fff; font-size: 13px; }
         
         #searchResult { font-size: 12px; color: #2ecc71; margin-top: 10px; padding: 8px; background: #000; border-radius: 5px; display: none; border-left: 3px solid #2ecc71; }
-
         #status { margin-top: 15px; color: #666; font-size: 12px; }
         #refBox { display: none; margin-top: 25px; background: #0d1117; padding: 15px; border-radius: 12px; border: 1px dashed #2ecc71; }
         .link-text { font-size: 10px; color: #2ecc71; margin: 10px 0; word-break: break-all; background: #000; padding: 8px; border-radius: 5px; }
@@ -54,7 +52,7 @@
         </div>
         <div class="stat-item">
             <span class="stat-label">Моя Копилка</span>
-            <span id="uiBalance" class="stat-val">0.00 BNB</span>
+            <span id="uiBalance" class="stat-val">0.000 BNB</span>
         </div>
     </div>
 
@@ -63,10 +61,10 @@
         <div id="slotsContainer"></div>
     </div>
 
-    <button id="btnConnect" onclick="connect()">ВОЙТИ В СИСТЕМУ</button>
+    <button id="btnConnect" onclick="connect()">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
     <button id="btnPay" style="display:none; background:#2ecc71; color:#fff;">АКТИВИРОВАТЬ КЛЮЧ (0.05 BNB)</button>
     
-    <div id="status">Требуется авторизация</div>
+    <div id="status">Нажмите кнопку для входа</div>
     
     <div id="refBox">
         <p style="color: #f39c12; font-size: 11px; margin: 0; font-weight: bold;">ВАША ССЫЛКА ПРИГЛАШЕНИЯ:</p>
@@ -76,13 +74,12 @@
 
     <div id="adminPanel" class="admin-section">
         <h4>УПРАВЛЕНИЕ ПРОЕКТОМ</h4>
-        
         <div class="admin-stats">
             <div>
                 <span class="stat-label">В системе BNB</span>
                 <span id="sysBalance" class="stat-val" style="color:#e74c3c">0.00</span>
             </div>
-            <div>
+            <div id="sysUsersBox">
                 <span class="stat-label">Участников</span>
                 <span id="sysUsers" class="stat-val" style="color:#e74c3c">0</span>
             </div>
@@ -98,7 +95,7 @@
         <div class="admin-group">
             <label>ДОБАВИТЬ БЕСПЛАТНО</label>
             <input type="text" id="newWallet" placeholder="Адрес нового участника">
-            <input type="text" id="newRef" placeholder="Адрес пригласителя (Referrer)">
+            <input type="text" id="newRef" placeholder="Адрес пригласителя">
             <button onclick="adminAdd()" style="background:#e74c3c; color:#fff;">Зарегистрировать бесплатно</button>
         </div>
     </div>
@@ -113,13 +110,13 @@
         "function register(address _ref) external payable",
         "function adminAddUser(address _user, address _referrer) external",
         "function users(address) view returns (uint256 level, address referrer, uint256 internalBalance, uint256 referralsInLevel, uint256 totalDirectReferrals, bool exists)",
-        "function totalUsers() view returns (uint256)" // Проверь, есть ли эта функция в контракте!
+        "function totalUsers() view returns (uint256)"
     ];
 
     let provider, signer, contract, userAddr;
 
     async function connect() {
-        if (!window.ethereum) return alert("MetaMask/Trust Wallet?");
+        if (!window.ethereum) return alert("Используйте MetaMask или Trust Wallet");
         try {
             await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID }] });
             provider = new ethers.BrowserProvider(window.ethereum);
@@ -133,40 +130,27 @@
                 document.getElementById('adminPanel').style.display = "block";
                 loadAdminStats();
             }
-            
             loadUserData();
-        } catch (e) { document.getElementById('status').innerText = "Ошибка подключения"; }
+        } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
     }
 
     async function loadAdminStats() {
-        // Общий баланс контракта
-        const bal = await provider.getBalance(CONTRACT_ADDR);
-        document.getElementById('sysBalance').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2);
-        
-        // Общее число юзеров (если в контракте есть totalUsers)
         try {
+            const bal = await provider.getBalance(CONTRACT_ADDR);
+            document.getElementById('sysBalance').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2);
             const count = await contract.totalUsers();
             document.getElementById('sysUsers').innerText = count.toString();
-        } catch(e) { document.getElementById('sysUsers').innerText = "N/A"; }
+        } catch(e) { document.getElementById('sysUsersBox').style.display = "none"; }
     }
 
     async function searchUser() {
         const addr = document.getElementById('searchAddr').value.trim();
         if (!ethers.isAddress(addr)) return alert("Неверный адрес");
-        
         try {
             const u = await contract.users(addr);
             const res = document.getElementById('searchResult');
             res.style.display = "block";
-            if (u.exists) {
-                res.innerHTML = `
-                    <b>Уровень:</b> ${u.level}<br>
-                    <b>Копилка:</b> ${ethers.formatEther(u.internalBalance)} BNB<br>
-                    <b>Рефералов:</b> ${u.totalDirectReferrals}
-                `;
-            } else {
-                res.innerHTML = "Участник не найден";
-            }
+            res.innerHTML = u.exists ? `<b>Уровень:</b> ${u.level}<br><b>Копилка:</b> ${ethers.formatEther(u.internalBalance)} BNB` : "Не найден";
         } catch(e) { alert("Ошибка поиска"); }
     }
 
@@ -177,17 +161,18 @@
                 document.getElementById('statsUI').style.display = "grid";
                 document.getElementById('progressUI').style.display = "block";
                 document.getElementById('btnPay').style.display = "none";
-                
-                const lvl = Number(user.level);
-                document.getElementById('uiLevel').innerText = lvl;
+                document.getElementById('uiLevel').innerText = user.level.toString();
                 document.getElementById('uiBalance').innerText = parseFloat(ethers.formatEther(user.internalBalance)).toFixed(3) + " BNB";
-
-                drawSlots(lvl, Number(user.referralsInLevel));
+                
+                // Рисуем слоты на основе уровня и кол-ва рефералов в уровне
+                drawSlots(Number(user.level), Number(user.referralsInLevel));
+                
                 showRef(userAddr);
-                document.getElementById('status').innerText = "Активен";
+                document.getElementById('status').innerText = "Личный кабинет активен";
             } else {
                 document.getElementById('btnPay').style.display = "block";
                 document.getElementById('btnPay').onclick = register;
+                document.getElementById('status').innerText = "Требуется активация";
             }
         } catch (e) { console.error(e); }
     }
@@ -195,21 +180,33 @@
     function drawSlots(level, activeCount) {
         const container = document.getElementById('slotsContainer');
         container.innerHTML = "";
+        
+        // Математика глубины уровней (2, 4, 8, 16, 32)
         let depth = level > 5 ? level - 5 : level;
-        let total = 0;
+        document.getElementById('slotsHeader').innerText = `ПРОГРЕСС УРОВНЯ ${level}`;
+        
+        let slotsDrawn = 0;
         for (let r = 1; r <= depth; r++) {
             const row = document.createElement('div');
             row.className = "level-row";
+            
             const label = document.createElement('span');
             label.className = "row-label";
             label.innerText = "Ряд " + r;
             row.appendChild(label);
+
             const slotsInRow = Math.pow(2, r); 
+            
             for (let s = 0; s < slotsInRow; s++) {
                 const d = document.createElement('div');
-                d.className = total < activeCount ? "slot active" : "slot";
+                // Закрашиваем только если активных рефералов больше чем порядковый номер нарисованного слота
+                if (slotsDrawn < activeCount) {
+                    d.className = "slot active";
+                } else {
+                    d.className = "slot";
+                }
                 row.appendChild(d);
-                total++;
+                slotsDrawn++;
             }
             container.appendChild(row);
         }
@@ -222,7 +219,7 @@
             const tx = await contract.register(ref, { value: ethers.parseEther("0.05") });
             await tx.wait();
             location.reload();
-        } catch (e) { alert("Ошибка"); }
+        } catch (e) { alert("Ошибка оплаты"); }
     }
 
     async function adminAdd() {

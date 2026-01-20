@@ -2,119 +2,217 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <title>SparkPoint - Personal Office</title>
+    <title>SparkPoint - Command Center</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
     <style>
         body { background: #0b1015; color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; margin: 0; }
-        .box { border: 2px solid #f39c12; padding: 25px; border-radius: 20px; background: #161b22; max-width: 400px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .box { border: 2px solid #f39c12; padding: 25px; border-radius: 20px; background: #161b22; max-width: 480px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         h2 { color: #f39c12; margin-bottom: 20px; letter-spacing: 1px; }
-        .badge { background: #f1c40f; color: #000; padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; }
         
-        button { background: #f39c12; color: #000; border: none; padding: 16px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; transition: 0.3s; }
-        button:hover { filter: brightness(1.2); }
+        button { background: #f39c12; color: #000; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 10px; transition: 0.3s; }
+        button:hover { filter: brightness(1.1); }
 
-        .stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; display: none; }
-        .stat-card { background: #1f2730; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        .stat-val { display: block; font-size: 22px; font-weight: bold; color: #f39c12; margin-top: 5px; }
-        .stat-label { font-size: 12px; color: #aaa; text-transform: uppercase; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; display: none; }
+        .stat-item { background: #1f2730; padding: 12px; border-radius: 10px; border: 1px solid #333; text-align: left; }
+        .stat-label { font-size: 10px; color: #888; text-transform: uppercase; }
+        .stat-val { display: block; font-size: 15px; font-weight: bold; color: #f39c12; }
+
+        .progress-section { margin-top: 25px; padding: 15px; background: #0d1117; border-radius: 15px; display: none; }
+        .slots-title { font-size: 11px; color: #f1c40f; margin-bottom: 12px; font-weight: bold; }
+        .level-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+        .slot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #444; background: #222; }
+        .slot.active { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+        .row-label { font-size: 9px; color: #555; margin-right: 5px; align-self: center; min-width: 40px; text-align: right; }
+
+        /* Админ-панель */
+        .admin-section { border: 2px solid #e74c3c; margin-top: 30px; padding: 20px; border-radius: 15px; background: #1a0a0a; display: none; text-align: left; }
+        .admin-section h4 { color: #e74c3c; margin-top: 0; text-align: center; border-bottom: 1px solid #331111; padding-bottom: 10px; }
+        .admin-stats { display: flex; justify-content: space-between; margin-bottom: 15px; background: #000; padding: 10px; border-radius: 8px; }
+        .admin-stats div { text-align: center; width: 50%; }
         
-        .vip-status { color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.5); font-weight: bold; }
+        .admin-group { margin-bottom: 15px; padding: 10px; background: #251010; border-radius: 8px; }
+        .admin-group label { font-size: 11px; color: #e74c3c; font-weight: bold; display: block; margin-bottom: 5px; }
+        .admin-section input { width: 95%; padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #441111; background: #000; color: #fff; font-size: 13px; }
+        
+        #searchResult { font-size: 12px; color: #2ecc71; margin-top: 10px; padding: 8px; background: #000; border-radius: 5px; display: none; border-left: 3px solid #2ecc71; }
 
-        #status { margin-top: 20px; color: #888; font-size: 13px; }
+        #status { margin-top: 15px; color: #666; font-size: 12px; }
         #refBox { display: none; margin-top: 25px; background: #0d1117; padding: 15px; border-radius: 12px; border: 1px dashed #2ecc71; }
-        .link-text { font-size: 11px; color: #2ecc71; margin: 12px 0; word-break: break-all; font-family: monospace; background: #000; padding: 8px; border-radius: 5px; }
-        
-        .admin-section { border: 2px solid #e74c3c; margin-top: 25px; padding: 15px; border-radius: 12px; background: #1a0a0a; display: none; }
-        .admin-section input { width: 90%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; }
+        .link-text { font-size: 10px; color: #2ecc71; margin: 10px 0; word-break: break-all; background: #000; padding: 8px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <span class="badge">BSC Testnet</span>
     <h2>SparkPoint</h2>
     
-    <div id="statsUI" class="stats-container">
-        <div class="stat-card">
-            <span class="stat-label">Ваш Уровень</span>
+    <div id="statsUI" class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-label">Мой Уровень</span>
             <span id="uiLevel" class="stat-val">-</span>
         </div>
-        <div class="stat-card">
-            <span class="stat-label">Партнеры</span>
-            <span id="uiRefs" class="stat-val">0</span>
+        <div class="stat-item">
+            <span class="stat-label">Моя Копилка</span>
+            <span id="uiBalance" class="stat-val">0.00 BNB</span>
         </div>
-        <p style="grid-column: span 2; font-size: 11px; color: #2ecc71; margin: 0;">Выплаты поступают сразу на кошелек</p>
     </div>
 
-    <button id="btnConnect" onclick="connect()">ВОЙТИ В КАБИНЕТ</button>
-    <button id="btnPay" style="display:none; background:#2ecc71; color:#fff;">АКТИВИРОВАТЬ (0.05 T-BNB)</button>
+    <div id="progressUI" class="progress-section">
+        <div class="slots-title" id="slotsHeader">ПРОГРЕСС УРОВНЯ</div>
+        <div id="slotsContainer"></div>
+    </div>
+
+    <button id="btnConnect" onclick="connect()">ВОЙТИ В СИСТЕМУ</button>
+    <button id="btnPay" style="display:none; background:#2ecc71; color:#fff;">АКТИВИРОВАТЬ КЛЮЧ (0.05 BNB)</button>
     
-    <div id="status">Подключите кошелек</div>
+    <div id="status">Требуется авторизация</div>
     
     <div id="refBox">
-        <p style="color: #f39c12; font-size: 13px; margin: 0; font-weight: bold;">ВАША ССЫЛКА ПРИГЛАШЕНИЯ:</p>
+        <p style="color: #f39c12; font-size: 11px; margin: 0; font-weight: bold;">ВАША ССЫЛКА ПРИГЛАШЕНИЯ:</p>
         <div id="linkText" class="link-text"></div>
-        <button onclick="copyLink()" style="padding: 10px; font-size: 12px; background: #444; color: #fff; width: auto; margin-top: 0;">Копировать</button>
+        <button onclick="copyLink()" style="padding: 10px; font-size: 11px; background: #444; color: #fff; width: auto; margin-top: 0;">Копировать</button>
     </div>
 
     <div id="adminPanel" class="admin-section">
-        <h4 style="color: #e74c3c; margin: 0 0 10px 0;">АДМИН-ПАНЕЛЬ</h4>
-        <input type="text" id="newWallet" placeholder="Адрес участника">
-        <input type="text" id="newRef" placeholder="Адрес реферера">
-        <button onclick="adminAdd()" style="background:#e74c3c; color:#fff; padding: 10px; font-size: 14px;">Добавить бесплатно</button>
+        <h4>УПРАВЛЕНИЕ ПРОЕКТОМ</h4>
+        
+        <div class="admin-stats">
+            <div>
+                <span class="stat-label">В системе BNB</span>
+                <span id="sysBalance" class="stat-val" style="color:#e74c3c">0.00</span>
+            </div>
+            <div>
+                <span class="stat-label">Участников</span>
+                <span id="sysUsers" class="stat-val" style="color:#e74c3c">0</span>
+            </div>
+        </div>
+
+        <div class="admin-group">
+            <label>ПОИСК УЧАСТНИКА</label>
+            <input type="text" id="searchAddr" placeholder="Введите адрес 0x...">
+            <button onclick="searchUser()" style="background:#444; color:#fff; padding:8px; font-size:12px;">Проверить данные</button>
+            <div id="searchResult"></div>
+        </div>
+
+        <div class="admin-group">
+            <label>ДОБАВИТЬ БЕСПЛАТНО</label>
+            <input type="text" id="newWallet" placeholder="Адрес нового участника">
+            <input type="text" id="newRef" placeholder="Адрес пригласителя (Referrer)">
+            <button onclick="adminAdd()" style="background:#e74c3c; color:#fff;">Зарегистрировать бесплатно</button>
+        </div>
     </div>
 </div>
 
 <script>
     const CONTRACT_ADDR = "0x137cbBBb38962ABd3A3a0D212C1f408FBD92ffb8";
     const ADMIN_WALLET = "0xc675B81b3Ef6ac1F9aEEd581A47c245E08E41DEc".toLowerCase();
-    const CHAIN_ID = "0x61";
+    const CHAIN_ID = "0x61"; 
 
     const ABI = [
         "function register(address _ref) external payable",
         "function adminAddUser(address _user, address _referrer) external",
-        "function users(address) view returns (uint256 level, address referrer, uint256 internalBalance, uint256 referralsInLevel, uint256 totalDirectReferrals, bool exists)"
+        "function users(address) view returns (uint256 level, address referrer, uint256 internalBalance, uint256 referralsInLevel, uint256 totalDirectReferrals, bool exists)",
+        "function totalUsers() view returns (uint256)" // Проверь, есть ли эта функция в контракте!
     ];
 
-    let signer, contract, userAddr;
+    let provider, signer, contract, userAddr;
 
     async function connect() {
-        if (!window.ethereum) return alert("Используйте Trust Wallet / MetaMask");
+        if (!window.ethereum) return alert("MetaMask/Trust Wallet?");
         try {
             await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID }] });
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
             userAddr = accounts[0].toLowerCase();
             signer = await provider.getSigner();
             contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
 
             document.getElementById('btnConnect').style.display = "none";
-            if (userAddr === ADMIN_WALLET) document.getElementById('adminPanel').style.display = "block";
+            if (userAddr === ADMIN_WALLET) {
+                document.getElementById('adminPanel').style.display = "block";
+                loadAdminStats();
+            }
             
             loadUserData();
-        } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
+        } catch (e) { document.getElementById('status').innerText = "Ошибка подключения"; }
+    }
+
+    async function loadAdminStats() {
+        // Общий баланс контракта
+        const bal = await provider.getBalance(CONTRACT_ADDR);
+        document.getElementById('sysBalance').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2);
+        
+        // Общее число юзеров (если в контракте есть totalUsers)
+        try {
+            const count = await contract.totalUsers();
+            document.getElementById('sysUsers').innerText = count.toString();
+        } catch(e) { document.getElementById('sysUsers').innerText = "N/A"; }
+    }
+
+    async function searchUser() {
+        const addr = document.getElementById('searchAddr').value.trim();
+        if (!ethers.isAddress(addr)) return alert("Неверный адрес");
+        
+        try {
+            const u = await contract.users(addr);
+            const res = document.getElementById('searchResult');
+            res.style.display = "block";
+            if (u.exists) {
+                res.innerHTML = `
+                    <b>Уровень:</b> ${u.level}<br>
+                    <b>Копилка:</b> ${ethers.formatEther(u.internalBalance)} BNB<br>
+                    <b>Рефералов:</b> ${u.totalDirectReferrals}
+                `;
+            } else {
+                res.innerHTML = "Участник не найден";
+            }
+        } catch(e) { alert("Ошибка поиска"); }
     }
 
     async function loadUserData() {
         try {
             const user = await contract.users(userAddr);
-            if (user.exists) {
+            if (user.exists && Number(user.level) > 0) {
                 document.getElementById('statsUI').style.display = "grid";
+                document.getElementById('progressUI').style.display = "block";
+                document.getElementById('btnPay').style.display = "none";
                 
-                // Уровни 1-5 цифры, дальше VIP
-                let lvl = Number(user.level);
-                document.getElementById('uiLevel').innerHTML = lvl > 5 ? '<span class="vip-status">VIP ✨</span>' : lvl;
-                document.getElementById('uiRefs').innerText = user.totalDirectReferrals.toString();
+                const lvl = Number(user.level);
+                document.getElementById('uiLevel').innerText = lvl;
+                document.getElementById('uiBalance').innerText = parseFloat(ethers.formatEther(user.internalBalance)).toFixed(3) + " BNB";
 
+                drawSlots(lvl, Number(user.referralsInLevel));
                 showRef(userAddr);
-                document.getElementById('status').innerText = "Личный кабинет активен";
+                document.getElementById('status').innerText = "Активен";
             } else {
                 document.getElementById('btnPay').style.display = "block";
                 document.getElementById('btnPay').onclick = register;
-                document.getElementById('status').innerText = "Готов к регистрации";
             }
         } catch (e) { console.error(e); }
+    }
+
+    function drawSlots(level, activeCount) {
+        const container = document.getElementById('slotsContainer');
+        container.innerHTML = "";
+        let depth = level > 5 ? level - 5 : level;
+        let total = 0;
+        for (let r = 1; r <= depth; r++) {
+            const row = document.createElement('div');
+            row.className = "level-row";
+            const label = document.createElement('span');
+            label.className = "row-label";
+            label.innerText = "Ряд " + r;
+            row.appendChild(label);
+            const slotsInRow = Math.pow(2, r); 
+            for (let s = 0; s < slotsInRow; s++) {
+                const d = document.createElement('div');
+                d.className = total < activeCount ? "slot active" : "slot";
+                row.appendChild(d);
+                total++;
+            }
+            container.appendChild(row);
+        }
     }
 
     async function register() {
@@ -124,7 +222,7 @@
             const tx = await contract.register(ref, { value: ethers.parseEther("0.05") });
             await tx.wait();
             location.reload();
-        } catch (e) { alert("Ошибка оплаты"); }
+        } catch (e) { alert("Ошибка"); }
     }
 
     async function adminAdd() {
@@ -134,7 +232,8 @@
             const tx = await contract.adminAddUser(u, r);
             await tx.wait();
             alert("Участник добавлен!");
-        } catch (e) { alert("Ошибка"); }
+            loadAdminStats();
+        } catch (e) { alert("Ошибка!"); }
     }
 
     function showRef(addr) {
@@ -145,9 +244,8 @@
 
     function copyLink() {
         navigator.clipboard.writeText(document.getElementById('linkText').innerText);
-        alert("Ссылка скопирована!");
+        alert("Скопировано!");
     }
 </script>
-
 </body>
 </html>

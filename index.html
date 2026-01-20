@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <title>SparkPoint - Command Center</title>
+    <title>SparkPoint Admin Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
     <style>
@@ -11,7 +11,7 @@
         h2 { color: #f39c12; margin-bottom: 20px; letter-spacing: 1px; }
         
         button { background: #f39c12; color: #000; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 10px; transition: 0.3s; }
-        button:hover { filter: brightness(1.1); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
 
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; display: none; }
         .stat-item { background: #1f2730; padding: 12px; border-radius: 10px; border: 1px solid #333; text-align: left; }
@@ -25,16 +25,16 @@
         .slot.active { background: #2ecc71; border-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
         .row-label { font-size: 9px; color: #555; margin-right: 5px; align-self: center; min-width: 50px; text-align: right; }
 
+        /* Юридический блок */
+        .legal-box { margin-top: 15px; font-size: 11px; color: #888; text-align: left; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #222; }
+        .legal-box input { margin-right: 8px; }
+
         .admin-section { border: 2px solid #e74c3c; margin-top: 30px; padding: 20px; border-radius: 15px; background: #1a0a0a; display: none; text-align: left; }
         .admin-section h4 { color: #e74c3c; margin-top: 0; text-align: center; border-bottom: 1px solid #331111; padding-bottom: 10px; }
-        .admin-stats { display: flex; justify-content: space-between; margin-bottom: 15px; background: #000; padding: 10px; border-radius: 8px; }
-        
         .admin-group { margin-bottom: 15px; padding: 10px; background: #251010; border-radius: 8px; }
         .admin-group label { font-size: 11px; color: #e74c3c; font-weight: bold; display: block; margin-bottom: 5px; }
         .admin-section input { width: 95%; padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #441111; background: #000; color: #fff; font-size: 13px; }
         
-        #searchResult { font-size: 12px; color: #2ecc71; margin-top: 10px; padding: 8px; background: #000; border-radius: 5px; display: none; border-left: 3px solid #2ecc71; }
-        #status { margin-top: 15px; color: #666; font-size: 12px; }
         #refBox { display: none; margin-top: 25px; background: #0d1117; padding: 15px; border-radius: 12px; border: 1px dashed #2ecc71; }
         .link-text { font-size: 10px; color: #2ecc71; margin: 10px 0; word-break: break-all; background: #000; padding: 8px; border-radius: 5px; }
     </style>
@@ -50,7 +50,7 @@
             <span id="uiLevel" class="stat-val">-</span>
         </div>
         <div class="stat-item">
-            <span class="stat-label">Моя Копилка</span>
+            <span class="stat-label">Внутренняя Копилка</span>
             <span id="uiBalance" class="stat-val">0.000 BNB</span>
         </div>
     </div>
@@ -61,37 +61,38 @@
     </div>
 
     <button id="btnConnect" onclick="connect()">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
-    <button id="btnPay" style="display:none; background:#2ecc71; color:#fff;">АКТИВИРОВАТЬ КЛЮЧ (0.05 BNB)</button>
+
+    <div id="registrationBlock" style="display:none;">
+        <div class="legal-box">
+            <label>
+                <input type="checkbox" id="agreeCheck" onchange="togglePayBtn()"> 
+                Я подтверждаю, что беру на себя 100% ответственности за свои действия и понимаю, что проект не является инвестицией.
+            </label>
+        </div>
+        <button id="btnPay" disabled>АКТИВИРОВАТЬ КЛЮЧ (0.05 BNB)</button>
+    </div>
     
-    <div id="status">Нажмите кнопку для входа</div>
+    <div id="status" style="margin-top:15px; font-size:12px; color:#666;">Нажмите кнопку для входа</div>
     
     <div id="refBox">
-        <p style="color: #f39c12; font-size: 11px; margin: 0; font-weight: bold;">ВАША ССЫЛКА ПРИГЛАШЕНИЯ:</p>
+        <p style="color: #f39c12; font-size: 11px; margin: 0; font-weight: bold;">ВАША ССЫЛКА:</p>
         <div id="linkText" class="link-text"></div>
-        <button onclick="copyLink()" style="padding: 10px; font-size: 11px; background: #444; color: #fff; width: auto; margin-top: 0;">Копировать</button>
+        <button onclick="copyLink()" style="padding: 10px; font-size: 11px; background: #444; color: #fff; width: auto;">Копировать</button>
     </div>
 
     <div id="adminPanel" class="admin-section">
-        <h4>УПРАВЛЕНИЕ ПРОЕКТОМ</h4>
-        <div class="admin-stats">
-            <div style="text-align:center; width:100%">
-                <span class="stat-label">В системе BNB</span>
-                <span id="sysBalance" class="stat-val" style="color:#e74c3c">0.00</span>
-            </div>
-        </div>
-
+        <h4>УПРАВЛЕНИЕ АДМИНА</h4>
         <div class="admin-group">
-            <label>ПОИСК УЧАСТНИКА</label>
-            <input type="text" id="searchAddr" placeholder="Введите адрес 0x...">
-            <button onclick="searchUser()" style="background:#444; color:#fff; padding:8px; font-size:12px;">Проверить данные</button>
-            <div id="searchResult"></div>
+            <label>ДОБАВИТЬ УЧАСТНИКА БЕСПЛАТНО</label>
+            <input type="text" id="newWallet" placeholder="Адрес участника">
+            <input type="text" id="newRef" placeholder="Адрес пригласителя (опционально)">
+            <button onclick="adminAdd()" style="background:#e74c3c; color:#fff;">Зарегистрировать</button>
         </div>
-
         <div class="admin-group">
-            <label>ДОБАВИТЬ БЕСПЛАТНО</label>
-            <input type="text" id="newWallet" placeholder="Адрес нового участника">
-            <input type="text" id="newRef" placeholder="Адрес пригласителя">
-            <button onclick="adminAdd()" style="background:#e74c3c; color:#fff;">Зарегистрировать бесплатно</button>
+            <label>ПРОВЕРИТЬ КОШЕЛЕК</label>
+            <input type="text" id="searchAddr" placeholder="0x...">
+            <button onclick="searchUser()" style="background:#444; color:#fff;">Поиск</button>
+            <div id="searchResult" style="margin-top:10px; font-size:12px; color:#f39c12;"></div>
         </div>
     </div>
 </div>
@@ -99,7 +100,6 @@
 <script>
     const CONTRACT_ADDR = "0x137cbBBb38962ABd3A3a0D212C1f408FBD92ffb8";
     const ADMIN_WALLET = "0xc675B81b3Ef6ac1F9aEEd581A47c245E08E41DEc".toLowerCase();
-    const CHAIN_ID = "0x61"; 
 
     const ABI = [
         "function register(address _ref) external payable",
@@ -110,40 +110,16 @@
     let provider, signer, contract, userAddr;
 
     async function connect() {
-        if (!window.ethereum) return alert("Используйте MetaMask или Trust Wallet");
-        try {
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID }] });
-            provider = new ethers.BrowserProvider(window.ethereum);
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            userAddr = accounts[0].toLowerCase();
-            signer = await provider.getSigner();
-            contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
+        if (!window.ethereum) return alert("Установите MetaMask");
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const accounts = await provider.send("eth_requestAccounts", []);
+        userAddr = accounts[0].toLowerCase();
+        signer = await provider.getSigner();
+        contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
 
-            document.getElementById('btnConnect').style.display = "none";
-            if (userAddr === ADMIN_WALLET) {
-                document.getElementById('adminPanel').style.display = "block";
-                loadAdminStats();
-            }
-            loadUserData();
-        } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
-    }
-
-    async function loadAdminStats() {
-        try {
-            const bal = await provider.getBalance(CONTRACT_ADDR);
-            document.getElementById('sysBalance').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2);
-        } catch(e) { console.log(e); }
-    }
-
-    async function searchUser() {
-        const addr = document.getElementById('searchAddr').value.trim();
-        if (!ethers.isAddress(addr)) return alert("Неверный адрес");
-        try {
-            const u = await contract.users(addr);
-            const res = document.getElementById('searchResult');
-            res.style.display = "block";
-            res.innerHTML = u.exists ? `<b>Уровень:</b> ${u.level}<br><b>Копилка:</b> ${ethers.formatEther(u.internalBalance)} BNB` : "Не найден";
-        } catch(e) { alert("Ошибка поиска"); }
+        document.getElementById('btnConnect').style.display = "none";
+        if (userAddr === ADMIN_WALLET) document.getElementById('adminPanel').style.display = "block";
+        loadUserData();
     }
 
     async function loadUserData() {
@@ -152,61 +128,42 @@
             if (user.exists && Number(user.level) > 0) {
                 document.getElementById('statsUI').style.display = "grid";
                 document.getElementById('progressUI').style.display = "block";
-                document.getElementById('btnPay').style.display = "none";
+                document.getElementById('registrationBlock').style.display = "none";
                 
-                const currentLevel = Number(user.level);
-                document.getElementById('uiLevel').innerText = currentLevel;
-                document.getElementById('uiBalance').innerText = parseFloat(ethers.formatEther(user.internalBalance)).toFixed(3) + " BNB";
+                // Исправление для админа
+                document.getElementById('uiLevel').innerText = (userAddr === ADMIN_WALLET) ? "ADMIN" : user.level.toString();
+                document.getElementById('uiBalance').innerText = parseFloat(ethers.formatEther(user.internalBalance)).toFixed(4) + " BNB";
                 
-                drawSlots(currentLevel, Number(user.referralsInLevel));
+                drawSlots(Number(user.level), Number(user.referralsInLevel));
                 showRef(userAddr);
-                document.getElementById('status').innerText = "Личный кабинет активен";
             } else {
-                document.getElementById('btnPay').style.display = "block";
+                document.getElementById('registrationBlock').style.display = "block";
                 document.getElementById('btnPay').onclick = register;
-                document.getElementById('status').innerText = "Требуется активация";
             }
         } catch (e) { console.error(e); }
+    }
+
+    function togglePayBtn() {
+        document.getElementById('btnPay').disabled = !document.getElementById('agreeCheck').checked;
     }
 
     function drawSlots(level, activeCount) {
         const container = document.getElementById('slotsContainer');
         container.innerHTML = "";
+        let rowsToShow = (activeCount > 14) ? 4 : (activeCount > 6) ? 3 : (activeCount > 2) ? 2 : 1;
         
-        // РЕШАЕМ ПРОБЛЕМУ: определяем РЕАЛЬНУЮ глубину, которую надо показать
-        // Если activeCount (людей) мало, не рисуем все 5 рядов, даже если уровень 10
-        let displayDepth = 1;
-        if (activeCount > 2) displayDepth = 2;
-        if (activeCount > 6) displayDepth = 3;
-        if (activeCount > 14) displayDepth = 4;
-        if (activeCount > 30) displayDepth = 5;
+        document.getElementById('slotsHeader').innerText = (userAddr === ADMIN_WALLET) ? "ВАША СЕТЬ" : `ПРОГРЕСС УРОВНЯ ${level}`;
 
-        // Но при этом всегда рисуем минимум один ряд, соответствующий маркетингу уровня
-        let minMarketingDepth = level > 5 ? level - 5 : level;
-        let finalDepth = Math.max(displayDepth, minMarketingDepth);
-
-        document.getElementById('slotsHeader').innerText = `ПРОГРЕСС УРОВНЯ ${level}`;
-        
-        let totalSlotsProcessed = 0;
-        for (let line = 1; line <= finalDepth; line++) {
+        let filled = 0;
+        for (let r = 1; r <= rowsToShow; r++) {
             const row = document.createElement('div');
             row.className = "level-row";
-            
-            const label = document.createElement('span');
-            label.className = "row-label";
-            const participantsCount = Math.pow(2, line);
-            label.innerText = "Линия " + participantsCount;
-            row.appendChild(label);
-
-            for (let s = 0; s < participantsCount; s++) {
+            const count = Math.pow(2, r);
+            for (let s = 0; s < count; s++) {
                 const dot = document.createElement('div');
-                if (totalSlotsProcessed < activeCount) {
-                    dot.className = "slot active";
-                } else {
-                    dot.className = "slot";
-                }
+                dot.className = (filled < activeCount) ? "slot active" : "slot";
                 row.appendChild(dot);
-                totalSlotsProcessed++;
+                filled++;
             }
             container.appendChild(row);
         }
@@ -217,19 +174,26 @@
         const ref = urlParams.get('ref') || "0x0000000000000000000000000000000000000000";
         try {
             const tx = await contract.register(ref, { value: ethers.parseEther("0.05") });
+            document.getElementById('status').innerText = "Транзакция отправлена...";
             await tx.wait();
             location.reload();
         } catch (e) { alert("Ошибка оплаты"); }
     }
 
+    async function searchUser() {
+        const addr = document.getElementById('searchAddr').value;
+        if (!ethers.isAddress(addr)) return alert("Неверный адрес");
+        const u = await contract.users(addr);
+        document.getElementById('searchResult').innerText = u.exists ? `Уровень: ${u.level}, Баланс: ${ethers.formatEther(u.internalBalance)} BNB` : "Не найден";
+    }
+
     async function adminAdd() {
         const u = document.getElementById('newWallet').value;
-        const r = document.getElementById('newRef').value;
+        const r = document.getElementById('newRef').value || "0x0000000000000000000000000000000000000000";
         try {
             const tx = await contract.adminAddUser(u, r);
             await tx.wait();
             alert("Участник добавлен!");
-            loadAdminStats();
         } catch (e) { alert("Ошибка!"); }
     }
 
